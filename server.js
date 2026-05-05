@@ -20,16 +20,24 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const urlObj = new URL(req.url, `http://localhost:${PORT}`);
-  const path = urlObj.searchParams.get('path') || '/v1/accounts';
   const apiKey = req.headers['x-pb-key'] || '';
+  let pbPath = '/v1/accounts';
+  
+  if (req.url.includes('?path=')) {
+    const match = req.url.match(/[?&]path=([^&]*)/);
+    if (match) pbPath = decodeURIComponent(match[1]);
+  } else {
+    pbPath = req.url.split('?')[0];
+  }
+
+  console.log(`Proxying ${req.method} ${pbPath}`);
 
   let body = '';
   req.on('data', chunk => body += chunk);
   req.on('end', () => {
     const options = {
       hostname: 'api.post-bridge.com',
-      path: path,
+      path: pbPath,
       method: req.method,
       headers: {
         'Authorization': `Bearer ${apiKey}`,
